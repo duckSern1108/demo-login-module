@@ -1,0 +1,6 @@
+framework module Pods_vm_usecase_coor {
+  umbrella header "Pods-vm.usecase.coor-umbrella.h"
+
+  export *
+  module * { export * }
+}
