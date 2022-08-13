@@ -14,4 +14,7 @@ struct LoginGoogleCoordinator: LoginCoordinator {
     func goToForgotPassword() {
         print("Go to forgot password")
     }
+    func onLoginSuccess() {
+        print("Login success -> go to home")
+    }
 }

@@ -10,5 +10,5 @@ import PromiseKit
 
 
 protocol LoginUseCase {
-    func login(username: String?, password:String?) -> Promise<LoginModel>
+    func login(username: String, password:String) -> Promise<LoginModel>
 }

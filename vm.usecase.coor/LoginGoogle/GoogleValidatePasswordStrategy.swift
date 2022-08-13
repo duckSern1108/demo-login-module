@@ -11,7 +11,7 @@ struct GoogleValidatePasswordStrategy: LoginPasswordValidateStrategy {
     func isValidPassword(pass: String?) -> Bool {
         guard let pass = pass else {
             return false
-        }
+        }        
         return pass.count >= 6
     }
     func getErrorText(pass: String?) -> String {

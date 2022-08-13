@@ -12,7 +12,9 @@ struct GoogleUsernameValidateStrategy:LoginUserNameValidateStrategy {
         guard let username = username else {
             return false
         }
-        return username.starts(with: "G-")
+        if (username.count >= 2) {return username.starts(with: "G-")}
+        return true
+            
     }
     
     func getErrText(username: String?) -> String {

@@ -7,8 +7,6 @@
 
 import Foundation
 
-protocol LoginModel {
-    var isSuccess:Bool {get set}
-    var err:String? {get set}
-    var token:String? {get set}
+protocol LoginModel {    
+    var token:String {get set}
 }

@@ -7,8 +7,6 @@
 
 import Foundation
 
-struct GoogleLoginModel:LoginModel {
-    var isSuccess: Bool
-    var err: String?
-    var token: String?
+struct GoogleLoginModel:LoginModel {    
+    var token: String
 }

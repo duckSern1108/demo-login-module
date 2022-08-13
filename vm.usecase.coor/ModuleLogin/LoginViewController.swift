@@ -20,19 +20,17 @@ class LoginViewController: UIViewController {
     var viewModel:LoginViewModel!
     let bag = DisposeBag()
     
-    
-    init(usecase: LoginUseCase,
-         coordinator: LoginCoordinator,
-         validatePasswordStrategy: LoginPasswordValidateStrategy,
-         usernameValidateStrategy: LoginUserNameValidateStrategy) {
-        viewModel = LoginViewModel(useCase: usecase,
-                                   coordinator: coordinator,
-                                   validatePasswordStrategy: validatePasswordStrategy,
-                                   validateUsernameStrategy: usernameValidateStrategy)
-        super.init(nibName: nil, bundle: nil)
-    }
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
+    static func newVC(usecase: LoginUseCase,
+                      coordinator: LoginCoordinator,
+                      validatePasswordStrategy: LoginPasswordValidateStrategy,
+                      usernameValidateStrategy: LoginUserNameValidateStrategy) -> LoginViewController {
+        let viewModel = LoginViewModel(useCase: usecase,
+                                       coordinator: coordinator,
+                                       validatePasswordStrategy: validatePasswordStrategy,
+                                       validateUsernameStrategy: usernameValidateStrategy)
+        let vc = LoginViewController()
+        vc.viewModel = viewModel
+        return vc
     }
     
     @IBAction func onSignUpPress(_ sender: Any) {
@@ -43,13 +41,37 @@ class LoginViewController: UIViewController {
     }
     
     func bindViewModel() {
-        usernameTextField.rx.text.bind(to: viewModel.username).disposed(by: bag)
-        viewModel.usernameErrTextHidden.bind(to: usernameErrTxt.rx.isHidden).disposed(by: bag)
-        viewModel.usernameErrText.bind(to: usernameErrTxt.rx.text).disposed(by: bag)
-        passwordTextField.rx.text.bind(to: viewModel.password).disposed(by: bag)
-        viewModel.passwordErrTextHidden.bind(to: passwordErrTxt.rx.isHidden).disposed(by: bag)
-        viewModel.passwordErrText.bind(to: passwordErrTxt.rx.text).disposed(by: bag)
-        viewModel.disabledLogin.bind(to: loginBtn.rx.isEnabled).disposed(by: bag)
+        viewModel.configureObservable(password: passwordTextField.rx.text.orEmpty.asObservable(),
+                                      username: usernameTextField.rx.text.orEmpty.asObservable())
+        usernameTextField.rx.text.orEmpty
+            .asObservable()
+            .subscribe(onNext: { [weak self] in
+                self?.viewModel.username = $0
+            })
+            .disposed(by: bag)
+        viewModel.usernameErrTextHidden
+            .bind(to: usernameErrTxt.rx.isHidden)
+            .disposed(by: bag)
+        viewModel.usernameErrText
+            .bind(to: usernameErrTxt.rx.text)
+            .disposed(by: bag)
+        passwordTextField.rx.text.orEmpty
+            .asObservable()
+            .subscribe(onNext: { [weak self] in
+                self?.viewModel.password = $0
+            })
+            .disposed(by: bag)
+        viewModel.passwordErrTextHidden
+            .bind(to: passwordErrTxt.rx.isHidden)
+            .disposed(by: bag)
+        viewModel.passwordErrText
+            .bind(to: passwordErrTxt.rx.text)
+            .disposed(by: bag)
+        
+        Observable.merge(viewModel.disabledLogin.map({!$0}),viewModel.isLoading.map({!$0}).skip(1))
+            .distinctUntilChanged()
+            .bind(to: loginBtn.rx.isEnabled)
+            .disposed(by: bag)
     }
     
     override func viewDidLoad() {

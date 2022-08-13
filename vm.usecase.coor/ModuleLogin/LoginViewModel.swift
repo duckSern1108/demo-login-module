@@ -8,6 +8,7 @@
 import Foundation
 import RxRelay
 import RxSwift
+import RxCocoa
 import PromiseKit
 
 class LoginViewModel {
@@ -24,84 +25,75 @@ class LoginViewModel {
         self.coordinator = coordinator
         self.validatePasswordStrategy = validatePasswordStrategy
         self.validateUsernameStrategy = validateUsernameStrategy
+        
     }
     
-    var password:BehaviorRelay<String?> = BehaviorRelay(value: nil)
-    var passwordValid:Observable<Bool> {
-        password.map({ [weak self] in
-            guard let self = self else  {
-                return false
-            }
-            return self.validatePasswordStrategy.isValidPassword(pass: $0)
+    var password = ""
+    var passwordValid:Observable<Bool>!
+    
+    var passwordErrText:Observable<String>!
+    
+    var passwordErrTextHidden:Observable<Bool>!
+    
+    var username = ""
+    var usernameValid:Observable<Bool>!
+    var usernameErrText:Observable<String>!
+    var usernameErrTextHidden:Observable<Bool>!
+    var disabledLogin:Observable<Bool>!
+    
+    var isLoading:BehaviorRelay<Bool> = BehaviorRelay(value: false)
+    
+    func configureObservable(password: Observable<String>, username: Observable<String>) {
+        self.passwordValid = password.map({ [weak self] in
+            self?.validatePasswordStrategy.isValidPassword(pass: $0) ?? false
         })
-    }
-    
-    var passwordErrText:Observable<String> {
-        password.map { [weak self] in
-            guard let self = self else  {
-                return ""
-            }
-            return self.validatePasswordStrategy.getErrorText(pass: $0)
+        self.usernameValid = username.map({ [weak self] in
+            self?.validateUsernameStrategy.isValid(username: $0) ?? false
+        })
+        self.disabledLogin = Observable.combineLatest(usernameValid, passwordValid) {
+            !($0  && $1)
+            
         }
-    }
-    
-    var passwordErrTextHidden:Observable<Bool> {
-        Observable.combineLatest(password , passwordValid) {
-            if $0 == nil {
+        self.usernameErrTextHidden = Observable.combineLatest(username, usernameValid) {
+            if $0.count == 0 {
                 return true
             }
-            if $0!.count == 0 {return true}
-            return $0!.count > 0 && $1
+            return $0.count > 0 && $1
         }
-    }
-    
-    var username:BehaviorRelay<String?> = BehaviorRelay(value: nil)
-    var usernameValid:Observable<Bool> {
-        username.map({ [weak self] in
-            guard let self = self else {
-                return false
-            }
-            return self.validateUsernameStrategy.isValid(username: $0)
-        })
-    }
-    
-    var usernameErrText:Observable<String> {
-        password.map { [weak self] in
+        self.usernameErrText = username.map { [weak self] in
             guard let self = self else {
                 return ""
             }
             return self.validateUsernameStrategy.getErrText(username: $0)
         }
-    }
-    
-    var usernameErrTextHidden:Observable<Bool> {
-        Observable.combineLatest(username , usernameValid) {
-            if $0 == nil {
-                return true
+        
+        self.passwordErrText = password.map { [weak self] in
+            guard let self = self else  {
+                return ""
             }
-            if $0!.count == 0 {return true}
-            return $0!.count > 0 && $1
+            return self.validatePasswordStrategy.getErrorText(pass: $0)
         }
-    }
-    
-    var disabledLogin:Observable<Bool> {
-        Observable.combineLatest(usernameValid, passwordValid) {
-            $0  && $1
+        
+        self.passwordErrTextHidden = Observable.combineLatest(password, passwordValid) {
+            if $0.count == 0 {return true}
+            return $0.count > 0 && $1
         }
     }
     
     func login() {
+        self.isLoading.accept(true)
         firstly {
-            useCase.login(username: username.value, password: password.value)
+            self.useCase.login(username: self.username, password: self.password)
         }.done{
             loginData in
-            if loginData.isSuccess {
-                print("token :: ",loginData.token)
-            } else {
-                print("err :: ",loginData.err)
-            }
+            self.coordinator.onLoginSuccess()
+            print("token :: ",loginData.token)
         }.ensure {
-            print("Call api done")
+            self.isLoading.accept(false)            
+        }.catch{
+            err in
+            print("err :: ",err)
         }
+        
     }
 }
