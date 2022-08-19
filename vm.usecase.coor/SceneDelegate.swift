@@ -22,10 +22,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let coor = LoginGoogleCoordinator()
         let validatePass = GoogleValidatePasswordStrategy()
         let validateUsername = GoogleUsernameValidateStrategy()
-        let loginVC = LoginViewController.newVC(usecase: usecase,
-                                                        coordinator: coor,
-                                                        validatePasswordStrategy: validatePass,
-                                                        usernameValidateStrategy: validateUsername)
+        let loginVM = LoginViewModel(useCase: usecase, coordinator: coor, validatePasswordStrategy: validatePass, validateUsernameStrategy: validateUsername)
+        let loginVC = LoginViewController.newVC(viewModel: loginVM)
         window.rootViewController = loginVC
         
         window.makeKeyAndVisible()
